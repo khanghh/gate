@@ -3,4 +3,8 @@
 /.web/docs/.vitepress/cache
 tmp
 .geyser
+<<<<<<< HEAD
 ./gate
+=======
+gate
+>>>>>>> 3415964b (Fix Issue #108: Implement command aliases using Velocity's shallow copy approach)

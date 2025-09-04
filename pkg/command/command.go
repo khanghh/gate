@@ -127,13 +127,21 @@ func (m *Manager) CompletionSuggestions(parse *ParseResults) (*brigodier.Suggest
 func (m *Manager) RegisterWithAliases(command brigodier.LiteralNodeBuilder, aliases ...string) *brigodier.LiteralCommandNode {
 	// Register the primary command
 	primary := m.Register(command)
+<<<<<<< HEAD
 
+=======
+	
+>>>>>>> 3415964b (Fix Issue #108: Implement command aliases using Velocity's shallow copy approach)
 	// Create aliases using shallow copy approach (like Velocity)
 	for _, alias := range aliases {
 		aliasNode := m.shallowCopy(primary, strings.ToLower(alias))
 		m.Root.AddChild(aliasNode)
 	}
+<<<<<<< HEAD
 
+=======
+	
+>>>>>>> 3415964b (Fix Issue #108: Implement command aliases using Velocity's shallow copy approach)
 	return primary
 }
 
@@ -143,17 +151,29 @@ func (m *Manager) RegisterWithAliases(command brigodier.LiteralNodeBuilder, alia
 func (m *Manager) shallowCopy(original *brigodier.LiteralCommandNode, newName string) *brigodier.LiteralCommandNode {
 	// Create new literal builder with the alias name - chain calls to avoid type assertion issues
 	var builder brigodier.LiteralNodeBuilder = brigodier.Literal(newName)
+<<<<<<< HEAD
 
+=======
+	
+>>>>>>> 3415964b (Fix Issue #108: Implement command aliases using Velocity's shallow copy approach)
 	// Copy requirement if it exists
 	if original.Requirement() != nil {
 		builder = builder.Requires(original.Requirement())
 	}
+<<<<<<< HEAD
 
+=======
+	
+>>>>>>> 3415964b (Fix Issue #108: Implement command aliases using Velocity's shallow copy approach)
 	// Copy execution command if it exists
 	if original.Command() != nil {
 		builder = builder.Executes(original.Command())
 	}
+<<<<<<< HEAD
 
+=======
+	
+>>>>>>> 3415964b (Fix Issue #108: Implement command aliases using Velocity's shallow copy approach)
 	// Copy redirect information if it exists
 	if original.Redirect() != nil {
 		if original.RedirectModifier() != nil {
@@ -165,18 +185,33 @@ func (m *Manager) shallowCopy(original *brigodier.LiteralCommandNode, newName st
 			builder = builder.Fork(original.Redirect(), original.RedirectModifier())
 		}
 	}
+<<<<<<< HEAD
 
 	// Build the node first
 	aliasNode := builder.BuildLiteral()
 
+=======
+	
+	// Build the node first
+	aliasNode := builder.BuildLiteral()
+	
+>>>>>>> 3415964b (Fix Issue #108: Implement command aliases using Velocity's shallow copy approach)
 	// Copy all children (shallow copy)
 	for _, child := range original.Children() {
 		aliasNode.AddChild(child)
 	}
+<<<<<<< HEAD
 
 	return aliasNode
 }
 
+=======
+	
+	return aliasNode
+}
+
+
+>>>>>>> 3415964b (Fix Issue #108: Implement command aliases using Velocity's shallow copy approach)
 // OfferSuggestions returns completion suggestions.
 func (m *Manager) OfferSuggestions(ctx context.Context, source Source, cmdline string) ([]string, error) {
 	suggestions, err := m.OfferBrigodierSuggestions(ctx, source, cmdline)

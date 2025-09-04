@@ -32,7 +32,11 @@ require (
 	github.com/urfave/cli/v2 v2.27.7
 	github.com/zyedidia/generic v1.2.1
 	go.minekube.com/brigodier v0.0.2
+<<<<<<< HEAD
 	go.minekube.com/common v0.3.0
+=======
+	go.minekube.com/common v0.2.0
+>>>>>>> 3415964b (Fix Issue #108: Implement command aliases using Velocity's shallow copy approach)
 	go.minekube.com/connect v0.6.2
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.64.0
 	go.opentelemetry.io/otel v1.39.0
