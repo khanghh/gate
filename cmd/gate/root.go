@@ -102,7 +102,6 @@ Visit the website https://gate.minekube.com/ for more information.`
 			fmt.Printf("gate version %s\n", version.String())
 			return nil
 		}
-
 		// Init viper
 		v, err := initViper(c, configFile)
 		if err != nil {

@@ -18,7 +18,6 @@ func TestVersionCommand(t *testing.T) {
 	help, err := app.ToMarkdown()
 	require.NoError(t, err, "Should be able to generate help text")
 	assert.Contains(t, help, "version", "Help should mention version command")
-
 	// Test that our custom flags exist
 	flags := make(map[string]bool)
 	for _, flag := range app.Flags {
@@ -51,7 +50,6 @@ func TestVersionString(t *testing.T) {
 	// Test that version string is accessible
 	versionStr := version.String()
 	require.NotEmpty(t, versionStr, "Version string should not be empty")
-
 	// Should not panic or return empty in normal circumstances
 	assert.True(t, len(versionStr) > 0, "Version should have content")
 }
