@@ -73,6 +73,11 @@ var DefaultConfig = Config{
 	ForceKeyAuthentication:              true,
 	Lite:                                liteconfig.DefaultConfig,
 	Bedrock:                             bconfig.DefaultBedrockConfig,
+	IPBlacklist: IPBlacklist{
+		Enabled:         false,
+		URLs:            []string{},
+		RefreshInterval: configutil.Duration(1 * time.Hour),
+	},
 }
 
 func defaultMotd() *configutil.TextComponent {
@@ -126,6 +131,9 @@ type Config struct { // TODO use https://github.com/projectdiscovery/yamldoc-go 
 
 	// Bedrock edition configuration
 	Bedrock bconfig.BedrockConfig `yaml:"bedrock,omitempty" json:"bedrock,omitempty"`
+
+	// IP Blacklist configuration
+	IPBlacklist IPBlacklist `yaml:"ipBlacklist,omitempty" json:"ipBlacklist,omitempty"`
 }
 
 type (
@@ -168,6 +176,11 @@ type (
 		// Defaults to https://sessionserver.mojang.com/session/minecraft/hasJoined
 		SessionServerURL *configutil.URL `yaml:"sessionServerUrl"` // TODO support multiple urls configutil.SingleOrMulti[URL]
 	}
+	IPBlacklist struct {
+		Enabled         bool                `yaml:"enabled"`
+		URLs            []string            `yaml:"urls"`
+		RefreshInterval configutil.Duration `yaml:"refreshInterval"`
+	}
 )
 
 // ForwardingMode is a player info forwarding mode.
@@ -204,7 +217,7 @@ func (c *Config) Validate() (warns []error, errs []error) {
 	for _, quota := range []QuotaSettings{c.Quota.Connections, c.Quota.Logins} {
 		if quota.Enabled {
 			if quota.OPS <= 0 {
-				e("Invalid quota ops %d, use a number > 0", quota.OPS)
+				e("Invalid quota ops %f, use a number > 0", quota.OPS)
 			}
 			if quota.Burst < 1 {
 				e("Invalid quota burst %d, use a number >= 1", quota.Burst)
@@ -271,6 +284,12 @@ func (c *Config) Validate() (warns []error, errs []error) {
 	} else if c.Compression.Threshold == 0 {
 		w("All packets going through the proxy will be compressed, this lowers bandwidth, " +
 			"but has lower throughput and increases CPU usage.")
+	}
+
+	if c.IPBlacklist.Enabled {
+		if len(c.IPBlacklist.URLs) == 0 {
+			e("IP blacklist is enabled but no URLs provided.")
+		}
 	}
 
 	return

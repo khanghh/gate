@@ -122,6 +122,8 @@ type BedrockConfig struct {
 	// Gate ↔ Geyser connection settings
 	GeyserListenAddr string `yaml:"geyserListenAddr,omitempty" json:"geyserListenAddr,omitempty"`
 
+	LiteMode bool `yaml:"liteMode,omitempty" json:"liteMode,omitempty"`
+
 	// Bedrock player settings
 	UsernameFormat string `yaml:"usernameFormat,omitempty" json:"usernameFormat,omitempty"`
 
