@@ -596,10 +596,12 @@ func (p *Proxy) listenAndServe(ctx context.Context, addr string) error {
 // HandleConn handles a just-accepted client connection
 // that has not had any I/O performed on it yet.
 func (p *Proxy) HandleConn(raw net.Conn) {
-	if p.ipBlacklistMgr != nil && p.ipBlacklistMgr.IsBlocked(netutil.Host(raw.RemoteAddr())) {
-		p.log.Info("connection blocked by IP blacklist, closed", "remoteAddr", raw.RemoteAddr())
-		_ = raw.Close()
-		return
+	if p.ipBlacklistMgr != nil {
+		if blocked, source := p.ipBlacklistMgr.IsBlocked(netutil.Host(raw.RemoteAddr())); blocked {
+			p.log.Info("connection blocked by IP blacklist, closed", "remoteAddr", raw.RemoteAddr(), "source", source)
+			_ = raw.Close()
+			return
+		}
 	}
 	if p.connectionsQuota != nil && p.connectionsQuota.Blocked(netutil.Host(raw.RemoteAddr())) {
 		p.log.Info("connection exceeded rate limit, closed", "remoteAddr", raw.RemoteAddr())

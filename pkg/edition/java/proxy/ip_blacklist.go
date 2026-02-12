@@ -14,23 +14,23 @@ import (
 	"github.com/go-logr/logr"
 )
 
-const defaultIPBlacklistURL = "https://raw.githubusercontent.com/stamparm/ipsum/refs/heads/master/ipsum.txt"
-
 type ipBlacklistManager struct {
 	mu    sync.RWMutex
-	ips   map[string]struct{}
-	cidrs []*net.IPNet
+	ips   map[string]string // value is source URL
+	cidrs []cidrEntry
 	log   logr.Logger
 	urls  []string
 	sem   chan struct{}
 }
 
+type cidrEntry struct {
+	net    *net.IPNet
+	source string
+}
+
 func newIPBlacklistManager(log logr.Logger, urls []string) *ipBlacklistManager {
-	if len(urls) == 0 {
-		urls = []string{defaultIPBlacklistURL}
-	}
 	return &ipBlacklistManager{
-		ips:  make(map[string]struct{}),
+		ips:  make(map[string]string),
 		log:  log,
 		urls: urls,
 		sem:  make(chan struct{}, 1),
@@ -41,29 +41,29 @@ func (b *ipBlacklistManager) SetIPSources(urls []string) {
 	b.urls = urls
 }
 
-func (b *ipBlacklistManager) IsBlocked(ip string) bool {
+func (b *ipBlacklistManager) IsBlocked(ip string) (bool, string) {
 	b.mu.RLock()
 	defer b.mu.RUnlock()
 
 	// Check individual IPs first (fastest)
-	if _, ok := b.ips[ip]; ok {
-		return true
+	if source, ok := b.ips[ip]; ok {
+		return true, source
 	}
 
 	// Parse the IP address for CIDR checking
 	parsedIP := net.ParseIP(ip)
 	if parsedIP == nil {
-		return false
+		return false, ""
 	}
 
 	// Check CIDR ranges
-	for _, cidr := range b.cidrs {
-		if cidr.Contains(parsedIP) {
-			return true
+	for _, entry := range b.cidrs {
+		if entry.net.Contains(parsedIP) {
+			return true, entry.source
 		}
 	}
 
-	return false
+	return false, ""
 }
 
 func (b *ipBlacklistManager) fetchFromURL(url string) (map[string]struct{}, []*net.IPNet, error) {
@@ -134,8 +134,8 @@ func (b *ipBlacklistManager) Refresh() error {
 	}
 
 	b.log.Info("refreshing IP blacklist", "sources", len(b.urls))
-	allIPs := make(map[string]struct{})
-	var allCIDRs []*net.IPNet
+	allIPs := make(map[string]string)
+	var allCIDRs []cidrEntry
 	var lastErr error
 
 	for _, url := range b.urls {
@@ -148,10 +148,12 @@ func (b *ipBlacklistManager) Refresh() error {
 		}
 		// Merge IPs from this URL
 		for ip := range ips {
-			allIPs[ip] = struct{}{}
+			allIPs[ip] = url
 		}
 		// Merge CIDRs from this URL
-		allCIDRs = append(allCIDRs, cidrs...)
+		for _, cidr := range cidrs {
+			allCIDRs = append(allCIDRs, cidrEntry{net: cidr, source: url})
+		}
 		b.log.V(1).Info("fetched IP blacklist from URL", "url", url, "ips", len(ips), "cidrs", len(cidrs))
 	}
 
