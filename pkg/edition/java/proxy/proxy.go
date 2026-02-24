@@ -209,12 +209,6 @@ func (p *Proxy) Start(ctx context.Context) error {
 		p.Shutdown(p.config().ShutdownReason.T()) // disconnects players
 	}()
 
-	// Initialize IP blacklist if enabled
-	if p.cfg.IPBlacklist.Enabled {
-		p.ipBlacklistMgr = newIPBlacklistManager(p.log, p.cfg.IPBlacklist.URLs)
-		go p.ipBlacklistMgr.StartAutoRefresh(ctx, time.Duration(p.cfg.IPBlacklist.RefreshInterval))
-	}
-
 	eg, ctx := errgroup.WithContext(ctx)
 	listen := func(addr string) context.CancelFunc {
 		lnCtx, stop := context.WithCancel(ctx)
@@ -605,10 +599,12 @@ func (p *Proxy) listenAndServe(ctx context.Context, addr string) error {
 // HandleConn handles a just-accepted client connection
 // that has not had any I/O performed on it yet.
 func (p *Proxy) HandleConn(raw net.Conn) {
-	if p.ipBlacklistMgr != nil && p.ipBlacklistMgr.IsBlocked(netutil.Host(raw.RemoteAddr())) {
-		p.log.Info("connection blocked by IP blacklist, closed", "remoteAddr", raw.RemoteAddr())
-		_ = raw.Close()
-		return
+	if p.ipBlacklistMgr != nil {
+		if blocked, source := p.ipBlacklistMgr.IsBlocked(netutil.Host(raw.RemoteAddr())); blocked {
+			p.log.Info("connection blocked by IP blacklist, closed", "remoteAddr", raw.RemoteAddr(), "source", source)
+			_ = raw.Close()
+			return
+		}
 	}
 	if p.connectionsQuota != nil && p.connectionsQuota.Blocked(netutil.Host(raw.RemoteAddr())) {
 		p.log.Info("connection exceeded rate limit, closed", "remoteAddr", raw.RemoteAddr())
