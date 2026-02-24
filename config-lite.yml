@@ -103,6 +103,14 @@ config:
       ops: 5
       burst: 10
       maxEntries: 1000
+  
+  # IP Blacklist configuration
+  ipBlacklist:
+    # Enable or disable the IP blacklist feature
+    enabled: true
+    # URL to fetch the IP blacklist from
+    urls: 
+      - "https://raw.githubusercontent.com/mmpx12/proxy-list/master/ips-list.txt"
 
 # Configuration for Connect, a network that organizes all Minecraft servers/proxies
 # and makes them universally accessible for all players.

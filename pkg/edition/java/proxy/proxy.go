@@ -66,6 +66,8 @@ type Proxy struct {
 	connectionsQuota *addrquota.Quota
 	loginsQuota      *addrquota.Quota
 
+	ipBlacklistMgr *ipBlacklistManager
+
 	lite *lite.Lite // lite mode functionality
 }
 
@@ -171,6 +173,15 @@ func (p *Proxy) Start(ctx context.Context) error {
 
 	if err := p.init(); err != nil {
 		return fmt.Errorf("pre-initialization error: %w", err)
+	}
+
+	// Initialize IP blacklist if enabled
+	if p.cfg.IPBlacklist.Enabled {
+		if len(p.cfg.IPBlacklist.URLs) == 0 {
+			return errors.New("no IP blacklist URLs provided")
+		}
+		p.ipBlacklistMgr = newIPBlacklistManager(p.log, p.cfg.IPBlacklist.URLs)
+		go p.ipBlacklistMgr.FetchBlackListLoop(ctx, time.Duration(p.cfg.IPBlacklist.RefreshInterval))
 	}
 
 	// Init "plugins" with the proxy
@@ -584,6 +595,11 @@ func (p *Proxy) listenAndServe(ctx context.Context, addr string) error {
 // HandleConn handles a just-accepted client connection
 // that has not had any I/O performed on it yet.
 func (p *Proxy) HandleConn(raw net.Conn) {
+	if p.ipBlacklistMgr != nil && p.ipBlacklistMgr.Blocked(netutil.Host(raw.RemoteAddr())) {
+		p.log.Info("connection blocked by IP blacklist, closed", "remoteAddr", raw.RemoteAddr())
+		_ = raw.Close()
+		return
+	}
 	if p.connectionsQuota != nil && p.connectionsQuota.Blocked(netutil.Host(raw.RemoteAddr())) {
 		p.log.Info("connection exceeded rate limit, closed", "remoteAddr", raw.RemoteAddr())
 		_ = raw.Close()
