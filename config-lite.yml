@@ -26,6 +26,9 @@ config:
       - host: localhost
         # The backend server to connect to if matched.
         backend: localhost:25566
+        # Proxy protocol (HA-Proxy) determines whether Gate should support proxy protocol for players.
+        # Do not enable this if you don't know what it is.
+        proxyProtocol: true
         # The optional fallback status response when all backends of this route are offline.
         fallback:
           motd: |
@@ -107,7 +110,7 @@ config:
   # IP Blacklist configuration
   ipBlacklist:
     # Enable or disable the IP blacklist feature
-    enabled: true
+    enabled: false
     # URL to fetch the IP blacklist from
     urls: 
       - "https://raw.githubusercontent.com/mmpx12/proxy-list/master/ips-list.txt"

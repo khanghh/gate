@@ -181,7 +181,7 @@ func (p *Proxy) Start(ctx context.Context) error {
 			return errors.New("no IP blacklist URLs provided")
 		}
 		p.ipBlacklistMgr = newIPBlacklistManager(p.log, p.cfg.IPBlacklist.URLs)
-		go p.ipBlacklistMgr.FetchBlackListLoop(ctx, time.Duration(p.cfg.IPBlacklist.RefreshInterval))
+		go p.ipBlacklistMgr.StartAutoRefresh(ctx, time.Duration(p.cfg.IPBlacklist.RefreshInterval))
 	}
 
 	// Init "plugins" with the proxy
@@ -209,6 +209,12 @@ func (p *Proxy) Start(ctx context.Context) error {
 		p.Shutdown(p.config().ShutdownReason.T()) // disconnects players
 	}()
 
+	// Initialize IP blacklist if enabled
+	if p.cfg.IPBlacklist.Enabled {
+		p.ipBlacklistMgr = newIPBlacklistManager(p.log, p.cfg.IPBlacklist.URLs)
+		go p.ipBlacklistMgr.StartAutoRefresh(ctx, time.Duration(p.cfg.IPBlacklist.RefreshInterval))
+	}
+
 	eg, ctx := errgroup.WithContext(ctx)
 	listen := func(addr string) context.CancelFunc {
 		lnCtx, stop := context.WithCancel(ctx)
@@ -233,6 +239,10 @@ func (p *Proxy) Start(ctx context.Context) error {
 		}
 		if err := p.init(); err != nil {
 			p.log.Error(err, "re-initialization error")
+		}
+		if p.cfg.IPBlacklist.Enabled && p.ipBlacklistMgr != nil {
+			p.ipBlacklistMgr.SetIPSources(e.Config.IPBlacklist.URLs)
+			p.ipBlacklistMgr.Refresh()
 		}
 		if e.Config.Lite.Enabled {
 			// reset whole cache if routes have changed because
@@ -595,7 +605,7 @@ func (p *Proxy) listenAndServe(ctx context.Context, addr string) error {
 // HandleConn handles a just-accepted client connection
 // that has not had any I/O performed on it yet.
 func (p *Proxy) HandleConn(raw net.Conn) {
-	if p.ipBlacklistMgr != nil && p.ipBlacklistMgr.Blocked(netutil.Host(raw.RemoteAddr())) {
+	if p.ipBlacklistMgr != nil && p.ipBlacklistMgr.IsBlocked(netutil.Host(raw.RemoteAddr())) {
 		p.log.Info("connection blocked by IP blacklist, closed", "remoteAddr", raw.RemoteAddr())
 		_ = raw.Close()
 		return
