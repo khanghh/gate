@@ -177,9 +177,11 @@ type (
 		SessionServerURL *configutil.URL `yaml:"sessionServerUrl"` // TODO support multiple urls configutil.SingleOrMulti[URL]
 	}
 	IPBlacklist struct {
-		Enabled         bool                `yaml:"enabled"`
-		URLs            []string            `yaml:"urls"`
-		RefreshInterval configutil.Duration `yaml:"refreshInterval"`
+		Enabled         bool                      `yaml:"enabled"`
+		URLs            []string                  `yaml:"urls"`
+		RefreshInterval configutil.Duration       `yaml:"refreshInterval"`
+		Motd            *configutil.TextComponent `yaml:"motd"`
+		Favicon         favicon.Favicon           `yaml:"favicon"`
 	}
 )
 

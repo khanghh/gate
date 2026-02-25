@@ -34,6 +34,7 @@ type sessionHandlerDeps struct {
 	configProvider configProvider
 	authenticator  auth.Authenticator
 	loginsQuota    *addrquota.Quota
+	ipBlackListMgr *ipBlacklistManager
 }
 
 func (d *sessionHandlerDeps) config() *config.Config {

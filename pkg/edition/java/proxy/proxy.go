@@ -599,13 +599,6 @@ func (p *Proxy) listenAndServe(ctx context.Context, addr string) error {
 // HandleConn handles a just-accepted client connection
 // that has not had any I/O performed on it yet.
 func (p *Proxy) HandleConn(raw net.Conn) {
-	if p.ipBlacklistMgr != nil {
-		if blocked, source := p.ipBlacklistMgr.IsBlocked(netutil.Host(raw.RemoteAddr())); blocked {
-			p.log.Info("connection blocked by IP blacklist, closed", "remoteAddr", raw.RemoteAddr(), "source", source)
-			_ = raw.Close()
-			return
-		}
-	}
 	if p.connectionsQuota != nil && p.connectionsQuota.Blocked(netutil.Host(raw.RemoteAddr())) {
 		p.log.Info("connection exceeded rate limit, closed", "remoteAddr", raw.RemoteAddr())
 		_ = raw.Close()
@@ -650,14 +643,25 @@ func (p *Proxy) HandleConn(raw net.Conn) {
 		time.Duration(p.cfg.ConnectionTimeout)*time.Millisecond,
 		p.cfg.Compression.Level,
 	)
-	conn.SetActiveSessionHandler(state.Handshake, newHandshakeSessionHandler(conn, &sessionHandlerDeps{
+
+	deps := &sessionHandlerDeps{
 		proxy:          p,
 		registrar:      p,
 		configProvider: p,
 		eventMgr:       p.event,
 		authenticator:  p.authenticator,
 		loginsQuota:    p.loginsQuota,
-	}))
+		ipBlackListMgr: p.ipBlacklistMgr,
+	}
+
+	ipAddr := netutil.Host(conn.RemoteAddr())
+	ipBlocked, blockSrc := p.ipBlacklistMgr.IsBlocked(ipAddr)
+	if ipBlocked {
+		p.log.Info("Incoming blacklisted IP connection", "ip", ipAddr, "source", blockSrc)
+		conn.SetActiveSessionHandler(state.Handshake, newBlacklistedSessionHandler(conn, deps, blockSrc))
+	} else {
+		conn.SetActiveSessionHandler(state.Handshake, newHandshakeSessionHandler(conn, deps))
+	}
 	readLoop()
 }
 

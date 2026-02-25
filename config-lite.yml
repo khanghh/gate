@@ -114,6 +114,9 @@ config:
     # URL to fetch the IP blacklist from
     urls: 
       - "https://raw.githubusercontent.com/mmpx12/proxy-list/master/ips-list.txt"
+    motd: |
+          §cYour IP is blocked on this server
+          §7If you believe this is a mistake, contact staff.
 
 # Configuration for Connect, a network that organizes all Minecraft servers/proxies
 # and makes them universally accessible for all players.
